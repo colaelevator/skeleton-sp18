@@ -38,4 +38,42 @@ public class Planet {
         double dY=-this.yyPos+p.yyPos;
         return this.calcForceExertedBy(p)*dY/this.calcDistance(p);
     }
+    public boolean equals(Planet p) {
+        return this==p;
+    }
+    public double calcNetForceExertedByX(Planet[] planets) {
+        double sumofNetForcebyX=0.0;
+        for(Planet p:planets) {
+            if(this.equals(p)) {
+                continue;
+            } else {
+                sumofNetForcebyX+=this.calcForceExertedByX(p);
+            }
+        }
+        return sumofNetForcebyX;
+    }
+    public double calcNetForceExertedByY(Planet[] planets) {
+        double sumofNetForcebyY=0.0;
+        for (Planet p:planets) {
+            if (this.equals(p)) {
+                continue;
+            } else {
+                sumofNetForcebyY+=this.calcForceExertedByY(p);
+            }
+        }
+        return sumofNetForcebyY;
+    }
+
+    public void update(double dt,double Fx,double Fy) {
+        double ax=Fx/this.mass;
+        double ay=Fy/this.mass;
+        this.xxVel+=ax*dt;
+        this.yyVel+=ay*dt;
+        this.xxPos+=this.xxVel*dt;
+        this.yyPos+=this.yyVel*dt;
+    }
+
+    public void draw() {
+        StdDraw.picture(this.xxPos,this.yyPos,"images/"+this.imgFileName);
+    }
 }
