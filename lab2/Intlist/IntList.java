@@ -109,7 +109,7 @@ public class IntList {
             ptr = ptr.rest;
         }
         if (B == null) {
-            return null;
+            return A;
         }
         while (B != null) {
             ptr.rest = new IntList(B.first, null);
