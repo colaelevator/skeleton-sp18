@@ -120,6 +120,19 @@ public class IntList {
         return head;
     }
 
+    public static IntList reverse(IntList A) {
+        IntList frontOfReversed = null;
+        IntList nextNodeToAdd = A;
+        while (nextNodeToAdd != null) {
+            IntList remainderOfOriginal = nextNodeToAdd.rest;
+            nextNodeToAdd.rest = frontOfReversed;
+            frontOfReversed = nextNodeToAdd;
+            nextNodeToAdd = remainderOfOriginal;
+        }
+        return frontOfReversed;
+    }
+
+
 
 
 
