@@ -39,11 +39,6 @@ public class LinkedListDeque<T> {
         endSentinel = null;
         size = 0;
     }
-    public LinkedListDeque(T item) {
-        headSentinel = new Node<>(item);
-        endSentinel = headSentinel;
-        size = 1;
-    }
     public void addFirst(T item) {
         headSentinel = new Node<>(item, headSentinel);
         if (size > 0) {
