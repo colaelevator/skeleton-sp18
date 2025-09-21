@@ -1,15 +1,15 @@
-public class ArrayDeque<Type> {
-    private Type[] array;
+public class ArrayDeque<T> {
+    private T[] array;
     private int size;
     private int frontPtr;
     private int backPtr;
     private int capacity;
     public ArrayDeque() {
-         array = (Type[]) new Object[8];
-         capacity = 8;
-         frontPtr = 0;
-         backPtr = 0;
-         size = 0;
+        array = (T[]) new Object[8];
+        capacity = 8;
+        frontPtr = 0;
+        backPtr = 0;
+        size = 0;
     }
     private boolean isFull() {
         return (backPtr) % capacity == frontPtr && size == capacity;
@@ -25,7 +25,7 @@ public class ArrayDeque<Type> {
         }
     }
     private void resize(int newCapacity) {
-        Type[] newArray = (Type[]) new Object[newCapacity];
+        T[] newArray = (T[]) new Object[newCapacity];
         int index = frontPtr;
         for (int i = 0; i < size; i++) {
             newArray[i] = array[index];
@@ -36,13 +36,13 @@ public class ArrayDeque<Type> {
         array = newArray;
         capacity = newCapacity;
     }
-    public void addFirst(Type item) {
+    public void addFirst(T item) {
         update();
         frontPtr = (frontPtr - 1 + capacity) % capacity;
         array[frontPtr] = item;
         size++;
     }
-    public void addLast(Type item) {
+    public void addLast(T item) {
         update();
         array[backPtr] = item;
         backPtr = (backPtr + 1) % capacity;
@@ -67,22 +67,22 @@ public class ArrayDeque<Type> {
         System.out.println();
     }
 
-    public Type removeFirst() {
-        Type item = array[frontPtr];
+    public T removeFirst() {
+        T item = array[frontPtr];
         frontPtr = (frontPtr + 1) % capacity;
         size--;
         update();
         return item;
     }
-    public Type removeLast() {
+    public T removeLast() {
         backPtr = (backPtr - 1 + capacity) % capacity;
-        Type item = array[backPtr];
+        T item = array[backPtr];
         size--;
         update();
         return item;
     }
 
-    public Type get(int index) {
+    public T get(int index) {
         if (index < 0 || index >= size) {
             return null;
         }
