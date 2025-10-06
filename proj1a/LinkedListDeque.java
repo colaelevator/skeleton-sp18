@@ -95,7 +95,7 @@ public class LinkedListDeque<T> {
         if (endSentinel != null) {
             Node<T> ptr = endSentinel;
             if (size != 1) {
-                endSentinel.previous = endSentinel;
+                endSentinel = endSentinel.previous;
                 endSentinel.next = null;
             } else {
                 headSentinel = null;
@@ -111,7 +111,7 @@ public class LinkedListDeque<T> {
         }
     }
     public T get(int index) {
-        if (index < 0 || index > size) {
+        if (index < 0 || index >= size) {
             return null;
         } else {
             int i = 0;
@@ -124,7 +124,7 @@ public class LinkedListDeque<T> {
         }
     }
     public T getRecursive(int index) {
-        if (index < 0 || index > size) {
+        if (index < 0 || index >= size) {
             return null;
         }
         return getRecursiveHelper(headSentinel, index);
