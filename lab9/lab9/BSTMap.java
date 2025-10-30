@@ -1,5 +1,6 @@
 package lab9;
-
+import java.util.NoSuchElementException;
+import java.util.Stack;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -44,7 +45,16 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      *  or null if this map contains no mapping for the key.
      */
     private V getHelper(K key, Node p) {
-        throw new UnsupportedOperationException();
+        if (p == null) {
+            return null;
+        }
+        if (key.compareTo(p.key) == 0) {
+            return p.value;
+        } else if (key.compareTo(p.key) < 0) {
+            return getHelper(key,p.left);
+        } else {
+            return getHelper(key,p.right);
+        }
     }
 
     /** Returns the value to which the specified key is mapped, or null if this
@@ -52,14 +62,21 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      */
     @Override
     public V get(K key) {
-        throw new UnsupportedOperationException();
+        return getHelper(key,root);
     }
 
     /** Returns a BSTMap rooted in p with (KEY, VALUE) added as a key-value mapping.
       * Or if p is null, it returns a one node BSTMap containing (KEY, VALUE).
      */
     private Node putHelper(K key, V value, Node p) {
-        throw new UnsupportedOperationException();
+        if (p == null) {
+            return new Node(key,value);
+        } else if (key.compareTo(p.key) < 0) {
+            p.left = putHelper(key,value,p.left);
+        } else {
+            p.right = putHelper(key,value,p.right);
+        }
+        return p;
     }
 
     /** Inserts the key KEY
@@ -67,13 +84,14 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      */
     @Override
     public void put(K key, V value) {
-        throw new UnsupportedOperationException();
+        root = putHelper(key,value,root);
+        size++;
     }
 
     /* Returns the number of key-value mappings in this map. */
     @Override
     public int size() {
-        throw new UnsupportedOperationException();
+        return size;
     }
 
     //////////////// EVERYTHING BELOW THIS LINE IS OPTIONAL ////////////////
@@ -84,13 +102,44 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         throw new UnsupportedOperationException();
     }
 
+    private Node removeHelper(K key,Node p) {
+        if (p == null) {
+            return null;
+        }
+        if (key.compareTo(p.key) < 0) {
+            p.left = removeHelper(key,p.left);
+        } else if (key.compareTo(p.key) > 0) {
+            p.right = removeHelper(key, p.right);
+        } else if (p.left == null){
+            return p.right;
+        } else if (p.right == null) {
+            return p.left;
+        } else {
+            p.right = swapSmallest(p.right,p);
+        }
+        return p;
+    }
+
+    private Node swapSmallest(Node p,Node q) {
+        if (p.left == null) {
+            q.key = p.key;
+            q.value = p.value;
+            return p.right;
+        } else {
+            p.left = swapSmallest(p.left,q);
+            return p;
+        }
+    }
+
     /** Removes KEY from the tree if present
      *  returns VALUE removed,
      *  null on failed removal.
      */
     @Override
     public V remove(K key) {
-        throw new UnsupportedOperationException();
+        V temp = get(key);
+        root = removeHelper(key,root);
+        return temp;
     }
 
     /** Removes the key-value entry for the specified key only if it is
@@ -99,11 +148,51 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
      **/
     @Override
     public V remove(K key, V value) {
-        throw new UnsupportedOperationException();
+        if (value != get(key)) {
+            return null;
+        }
+        root = removeHelper(key,root);
+        return value;
+    }
+
+    private class InorderIterator<K> implements Iterator<K> {
+
+        private Stack<Node> toDo = new Stack<>();
+
+        private void pushLeft(Node root) {
+            while (root != null) {
+                toDo.push(root);
+                root = root.left;
+            }
+        }
+
+        public InorderIterator(Node root) {
+            pushLeft(root);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return !toDo.empty();
+        }
+
+        @Override
+        public K next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            Node temp = toDo.pop();
+            K k = (K) temp.key;
+            if (temp.right != null) {
+                pushLeft(temp.right);
+            }
+            return k;
+        }
     }
 
     @Override
     public Iterator<K> iterator() {
-        throw new UnsupportedOperationException();
+        return new InorderIterator<>(root);
     }
+
+
 }
