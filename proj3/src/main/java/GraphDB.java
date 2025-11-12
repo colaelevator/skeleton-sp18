@@ -6,7 +6,7 @@ import java.io.IOException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * Graph for storing all of the intersection (vertex) and road (edge) information.
@@ -20,6 +20,70 @@ import java.util.ArrayList;
 public class GraphDB {
     /** Your instance variables for storing the graph. You should consider
      * creating helper classes, e.g. Node, Edge, etc. */
+
+    public Map<Long,Node> nodes = new HashMap<>();
+    public Map<Long,Way> ways = new HashMap<>();
+    public Map<Long,Set<Long>> adjs = new HashMap<>();
+
+    public void addAdjacent(Way way) {
+        if (way.linkedNode.size() < 2) return;
+        for (int i = 0; i < way.linkedNode.size() - 1; i++) {
+            addEdge(way.linkedNode.get(i),way.linkedNode.get(i + 1));
+        }
+    }
+
+    private void addEdge(long v,long w) {
+        adjs.computeIfAbsent(v,k -> new HashSet<>()).add(w);
+        adjs.computeIfAbsent(w,k -> new HashSet<>()).add(v);
+    }
+
+    static class Node {
+        long id;
+        double lat;
+        double lon;
+        Set<Long> linkedWays;
+        Map<String,String> extraInfo;
+        Node(String id,String lat,String lon) {
+            this.id = Long.parseLong(id);
+            this.lat = Double.parseDouble(lat);
+            this.lon = Double.parseDouble(lon);
+            extraInfo = new HashMap<>();
+            linkedWays = new HashSet<>();
+        }
+    }
+
+    public void addNode(Node node) {
+        nodes.put(node.id, node);
+    }
+
+    static class Way {
+        long id;
+        boolean valid = false;
+        List<Long> linkedNode;
+        Map<String,String> extraInfo;
+        Way(String id) {
+            this.id = Long.parseLong(id);
+            linkedNode = new ArrayList<>();
+            extraInfo = new HashMap<>();
+        }
+    }
+
+    public void addWay(Way way) {
+        ways.put(way.id, way);
+    }
+
+    public String findWay(long c, long n) {
+        for (long w : nodes.get(c).linkedWays) {
+            if (ways.get(w).linkedNode.contains(n)) {
+                String name = ways.get(w).extraInfo.get("name");
+                return name == null ? "" : name;
+            }
+        }
+        return "";
+    }
+
+
+
 
     /**
      * Example constructor shows how to create and start an XML parser.
@@ -57,7 +121,14 @@ public class GraphDB {
      *  we can reasonably assume this since typically roads are connected.
      */
     private void clean() {
-        // TODO: Your code here.
+        Set<Long> connected = new HashSet<>();
+        for (Map.Entry<Long, Set<Long>> entry : adjs.entrySet()) {
+            long v = entry.getKey();
+            connected.add(v);
+            connected.addAll(entry.getValue());
+        }
+        adjs.keySet().removeIf(id -> !connected.contains(id) || adjs.get(id).isEmpty());
+        nodes.keySet().removeIf(id -> !connected.contains(id));
     }
 
     /**
@@ -65,17 +136,15 @@ public class GraphDB {
      * @return An iterable of id's of all vertices in the graph.
      */
     Iterable<Long> vertices() {
-        //YOUR CODE HERE, this currently returns only an empty list.
-        return new ArrayList<Long>();
+        return Collections.unmodifiableSet(nodes.keySet());
     }
-
     /**
      * Returns ids of all vertices adjacent to v.
      * @param v The id of the vertex we are looking adjacent to.
      * @return An iterable of the ids of the neighbors of v.
      */
     Iterable<Long> adjacent(long v) {
-        return null;
+        return adjs.getOrDefault(v, Collections.emptySet());
     }
 
     /**
@@ -136,7 +205,17 @@ public class GraphDB {
      * @return The id of the node in the graph closest to the target.
      */
     long closest(double lon, double lat) {
-        return 0;
+        double minDist = Double.MAX_VALUE;
+        long closestId = -1;
+
+        for (Node n : nodes.values()) {
+            double dist = distance(lon, lat, n.lon, n.lat);
+            if (dist < minDist) {
+                minDist = dist;
+                closestId = n.id;
+            }
+        }
+        return closestId;
     }
 
     /**
@@ -145,7 +224,7 @@ public class GraphDB {
      * @return The longitude of the vertex.
      */
     double lon(long v) {
-        return 0;
+        return nodes.get(v).lon;
     }
 
     /**
@@ -154,6 +233,6 @@ public class GraphDB {
      * @return The latitude of the vertex.
      */
     double lat(long v) {
-        return 0;
+        return nodes.get(v).lat;
     }
 }

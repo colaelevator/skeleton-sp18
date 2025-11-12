@@ -4,12 +4,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.IOException;
@@ -285,7 +280,91 @@ public class MapServer {
      * cleaned <code>prefix</code>.
      */
     public static List<String> getLocationsByPrefix(String prefix) {
-        return new LinkedList<>();
+        Tries tries = new Tries();
+        for (long id : graph.vertices()) {
+            GraphDB.Node n = graph.nodes.get(id);
+            String name = n.extraInfo.get("name");
+            if (name == null) {
+                continue;
+            }
+            tries.add(name.toLowerCase());
+        }
+        return tries.prefix(prefix.toLowerCase());
+    }
+
+    private static class Tries {
+
+        private static class TNode {
+            boolean isEnd = false;
+            TNode[] next;
+            TNode() {
+                isEnd = false;
+                next = new TNode[128];
+                for (int i = 0; i < 128; i++) {
+                    next[i] = null;
+                }
+            }
+        }
+
+        private TNode root;
+
+        Tries() {
+            root = new TNode();
+        }
+
+        public void add(String word) {
+            if (word == null) {
+                return;
+            }
+            TNode p;
+            p = root;
+            for (int i = 0;i < word.length();i++) {
+                if (p.next[(int) word.charAt(i)] == null) {
+                    p.next[(int) word.charAt(i)] = new TNode();
+                }
+                p = p.next[(int) word.charAt(i)];
+            }
+            p.isEnd = true;
+        }
+
+        public boolean search(String word) {
+            if (word == null) {
+                return false;
+            }
+            TNode p = root;
+            for (int i = 0;i < word.length();i++) {
+                if (p.next[(int) word.charAt(i)] != null) {
+                    p = p.next[(int) word.charAt(i)];
+                } else {
+                    return false;
+                }
+            }
+            return p.isEnd;
+        }
+
+        public List<String> prefix(String prefix) {
+            List<String> result = new LinkedList<>();
+            TNode p = root;
+            for (int i = 0; i < prefix.length(); i++) {
+                if (p.next[(int) prefix.charAt(i)] == null) {
+                    return result;
+                }
+                p = p.next[(int) prefix.charAt(i)];
+            }
+            dfs(p,prefix,result);
+            return result;
+        }
+
+        private void dfs(TNode p,String curr,List<String> result) {
+            if (p.isEnd) {
+                result.add(curr);
+            }
+            for (int i = 0; i < 128; i++) {
+                if (p.next[i] != null) {
+                    dfs(p.next[i], curr + (char) i, result);
+                }
+            }
+        }
     }
 
     /**

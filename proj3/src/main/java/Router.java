@@ -1,5 +1,4 @@
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +11,26 @@ import java.util.regex.Pattern;
  * down to the priority you use to order your vertices.
  */
 public class Router {
+
+    private static class NodeState implements Comparable<NodeState> {
+        long ID;
+        double dist;
+        double priority;
+
+        NodeState(long ID,double dist,double priority) {
+            this.ID = ID;
+            this.dist = dist;
+            this.priority = priority;
+        }
+
+        @Override
+        public int compareTo(NodeState o) {
+            return Double.compare(this.priority,o.priority);
+        }
+    }
+
+
+
     /**
      * Return a List of longs representing the shortest path from the node
      * closest to a start location and the node closest to the destination
@@ -25,7 +44,51 @@ public class Router {
      */
     public static List<Long> shortestPath(GraphDB g, double stlon, double stlat,
                                           double destlon, double destlat) {
-        return null; // FIXME
+        long stId = g.closest(stlon,stlat);
+        long destId = g.closest(destlon,destlat);
+
+        Map<Long,Double> distTo = new HashMap<>();
+        Map<Long,Long> edgeTo = new HashMap<>();
+        PriorityQueue<NodeState> pq = new PriorityQueue<>();
+
+        for (long id : g.vertices()) {
+            distTo.put(id,Double.POSITIVE_INFINITY);
+        }
+        distTo.put(stId,0.0);
+        pq.add(new NodeState(stId,0.0,heuristic(g,stId,destId)));
+
+        while (!pq.isEmpty()) {
+            NodeState curr = pq.remove();
+            long v = curr.ID;
+
+            if (v == destId) {
+                return buildPath(edgeTo,stId,destId);
+            }
+
+            for (long neigh : g.adjacent(v)) {
+                double newDist = distTo.get(v) + g.distance(v,neigh);
+                if (newDist < distTo.get(neigh)) {
+                    distTo.put(neigh, newDist);
+                    edgeTo.put(neigh, v);
+                    double priority = newDist + heuristic(g, neigh, destId);
+                    pq.add(new NodeState(neigh, newDist, priority));
+                }
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private static double heuristic(GraphDB g,long s,long v) {
+        return g.distance(s,v);
+    }
+
+    private static List<Long> buildPath(Map<Long,Long> edgeTo,long start,long goal) {
+        LinkedList<Long> path = new LinkedList<>();
+        for (long at = goal;at != start;at = edgeTo.get(at)) {
+            path.addFirst(at);
+        }
+        path.addFirst(start);
+        return path;
     }
 
     /**
@@ -33,12 +96,66 @@ public class Router {
      * @param g The graph to use.
      * @param route The route to translate into directions. Each element
      *              corresponds to a node from the graph in the route.
-     * @return A list of NavigatiionDirection objects corresponding to the input
+     * @return A list of Navigatiion Direction objects corresponding to the input
      * route.
      */
     public static List<NavigationDirection> routeDirections(GraphDB g, List<Long> route) {
-        return null; // FIXME
+        List<NavigationDirection> result = new ArrayList<>();
+        if (route.size() < 2) return result;
+
+        String currWay = g.findWay(route.get(0), route.get(1));
+        NavigationDirection currDir = new NavigationDirection();
+        currDir.way = currWay;
+        currDir.direction = NavigationDirection.START;
+        currDir.distance = 0.0;
+
+        for (int i = 0; i < route.size() - 1; i++) {
+            String nextWay = g.findWay(route.get(i), route.get(i + 1));
+            double segmentDist = g.distance(route.get(i), route.get(i + 1));
+
+            if (nextWay.equals(currWay)) {
+                currDir.distance += segmentDist;
+            } else {
+                result.add(currDir);
+                currDir = new NavigationDirection();
+                currDir.way = nextWay;
+                currDir.direction = findDirection(g, route.get(i - 1), route.get(i), route.get(i + 1));
+                currDir.distance = segmentDist;
+                currWay = nextWay;
+            }
+        }
+
+        result.add(currDir);
+        return result;
     }
+
+
+    private static int findDirection(GraphDB g, long prev, long curr, long next) {
+        double bearingPrev = g.bearing(prev, curr);
+        double bearingNext = g.bearing(curr, next);
+        double relBearing = bearingNext - bearingPrev;
+
+        // 标准化角度到 [-180, 180)
+        relBearing = (relBearing + 540) % 360 - 180;
+
+        if (relBearing >= -15 && relBearing <= 15) {
+            return NavigationDirection.STRAIGHT;
+        } else if (relBearing > 15 && relBearing <= 30) {
+            return NavigationDirection.SLIGHT_RIGHT;
+        } else if (relBearing > 30 && relBearing <= 100) {
+            return NavigationDirection.RIGHT;
+        } else if (relBearing > 100) {
+            return NavigationDirection.SHARP_RIGHT;
+        } else if (relBearing < -15 && relBearing >= -30) {
+            return NavigationDirection.SLIGHT_LEFT;
+        } else if (relBearing < -30 && relBearing >= -100) {
+            return NavigationDirection.LEFT;
+        } else {
+            return NavigationDirection.SHARP_LEFT;
+        }
+    }
+
+
 
 
     /**
