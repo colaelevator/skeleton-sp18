@@ -6,7 +6,7 @@ public class QuickSort {
      *
      * The items in q2 will be catenated after all of the items in q1.
      */
-    private static <Item extends Comparable> Queue<Item> catenate(Queue<Item> q1, Queue<Item> q2) {
+    private static <Item extends Comparable<Item>> Queue<Item> catenate(Queue<Item> q1, Queue<Item> q2) {
         Queue<Item> catenated = new Queue<Item>();
         for (Item item : q1) {
             catenated.enqueue(item);
@@ -18,7 +18,7 @@ public class QuickSort {
     }
 
     /** Returns a random item from the given queue. */
-    private static <Item extends Comparable> Item getRandomItem(Queue<Item> items) {
+    private static <Item extends Comparable<Item>> Item getRandomItem(Queue<Item> items) {
         int pivotIndex = (int) (Math.random() * items.size());
         Item pivot = null;
         // Walk through the queue to find the item at the given index.
@@ -44,16 +44,44 @@ public class QuickSort {
      * @param greater   An empty Queue. When the function completes, this queue will contain
      *                  all of the items in unsorted that are greater than the given pivot.
      */
-    private static <Item extends Comparable> void partition(
+    private static <Item extends Comparable<Item>> void partition(
             Queue<Item> unsorted, Item pivot,
             Queue<Item> less, Queue<Item> equal, Queue<Item> greater) {
-        // Your code here!
+        for (Item item : unsorted) {
+            if (pivot.compareTo(item) == 0) {
+                equal.enqueue(item);
+            } else if (pivot.compareTo(item) > 0) {
+                less.enqueue(item);
+            } else {
+                greater.enqueue(item);
+            }
+        }
     }
 
     /** Returns a Queue that contains the given items sorted from least to greatest. */
-    public static <Item extends Comparable> Queue<Item> quickSort(
+    public static <Item extends Comparable<Item>> Queue<Item> quickSort(
             Queue<Item> items) {
-        // Your code here!
-        return items;
+        if (items.size() <= 1) {
+            return items;
+        }
+        Item pivot = getRandomItem(items);
+        Queue<Item> less = new Queue<>();
+        Queue<Item> greater = new Queue<>();
+        Queue<Item> equal = new Queue<>();
+        partition(items, pivot, less, equal, greater);
+        Queue<Item> left = quickSort(less);
+        Queue<Item> right = quickSort(greater);
+
+        return catenate(left, catenate(equal, right));
+    }
+
+    public static void main() {
+        Queue<String> students = new Queue<String>();
+        students.enqueue("Alice");
+        students.enqueue("Vanessa");
+        students.enqueue("Ethan");
+        System.out.println(students);
+        students = QuickSort.quickSort(students);
+        System.out.println(students);
     }
 }
